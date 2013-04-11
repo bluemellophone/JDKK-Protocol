@@ -1,4 +1,10 @@
-JDKK-Protocol - Crypto 2
+Cryptography and Network Security II Project (JDKK-Protocol)
+Project Members:
+* Jason Parham
+* David Bevins
+* Kyle Croman
+* Kegham Khosdeghian
+
 
 --------------- Library Build Instructions ---------------
 
