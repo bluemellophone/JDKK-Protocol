@@ -12,13 +12,13 @@ Project Members:
    - cd src/pycrypto-2.6
    - sudo ./configure
    - sudo python setup.py build
-   - move src/pycrypto-2.6/build/lib.*/ to project root
+   - move src/pycrypto-2.6/build/lib.*/Crypto to project root
 
 
 * PyZMQ ( Networking Library )
    - cd src/pyzmq-13.0.2
    - sudo python setup.py build
-   - move src/pyzmq-13.0.2/build/lib.*/ to project root
+   - move src/pyzmq-13.0.2/build/lib.*/zmq to project root
 
 
 --------------- PyCrypto Usage Instructions ---------------
