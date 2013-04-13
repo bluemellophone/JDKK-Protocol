@@ -1,4 +1,5 @@
 import sys
+import getpass
 import zmq # networking library
 
 ####################################################
@@ -41,13 +42,20 @@ print "\
 #################### Main Code #####################
 ####################################################
 
-socket.send(".")
-aesKey = socket.recv()
-print "AES Key:", aesKey
+email = getpass.getpass("RCS ID:")
+password = getpass.getpass("SIS Password:")
 
-while True:
-    msg = raw_input("Message: ")    
-    socket.send(msg)
+if len(email) > 32:
+	email = email[:32]
 
-    msg = socket.recv()
-    print "Response:", msg
+if len(password) > 32:
+	password = password[:32]
+
+# Handshake
+
+# Cast Ballot
+msg = raw_input("Message: ")    
+socket.send(msg + "," + email + "," + password)
+
+msg = socket.recv()
+print "Response:", msg
