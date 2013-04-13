@@ -41,8 +41,13 @@ print "\
 #################### Main Code #####################
 ####################################################
 
+socket.send(".")
+aesKey = socket.recv()
+print "AES Key:", aesKey
+
 while True:
-    msg = raw_input("Message: ")
+    msg = raw_input("Message: ")    
     socket.send(msg)
+
     msg = socket.recv()
     print "Response:", msg

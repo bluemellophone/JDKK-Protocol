@@ -42,6 +42,11 @@ print "\
 ####################################################
 
 while True:
-    msg = socket.recv()
-    print "Received Message:", msg
-    socket.send(msg + " resp")
+	msg = socket.recv()
+
+	if msg[0] == ".":
+		print "Received Handshake"
+		socket.send("handshake")
+	else:
+		print "Received Message:", msg
+		socket.send(msg + " resp")
