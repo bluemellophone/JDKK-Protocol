@@ -1,6 +1,10 @@
 import sys
 import getpass
 import zmq # networking library
+import aes
+import rsa
+import sha
+import rand
 
 ####################################################
 ################### Init Errors ####################
@@ -42,8 +46,11 @@ print "\
 #################### Main Code #####################
 ####################################################
 
-email = getpass.getpass("RCS ID:")
-password = getpass.getpass("SIS Password:")
+# email = getpass.getpass("RCS ID:")
+# password = getpass.getpass("SIS Password:")
+
+email = "parhaj@rpi.edu"
+password = "TemPa$$w0rd"
 
 if len(email) > 32:
 	email = email[:32]
@@ -52,10 +59,20 @@ if len(password) > 32:
 	password = password[:32]
 
 # Handshake
+key = "1234567890123VB67890A23456789012"
 
 # Cast Ballot
-msg = raw_input("Message: ")    
-socket.send(msg + "," + email + "," + password)
+# msg = raw_input("Message: ")  
+msg = "This is an example message!"  
+msg = msg + "," + email + "," + password
+
+while len(msg) % 16 != 0:
+	msg = msg + "."
+
+print msg, len(msg)
+e_msg = aes.aes_encrypt(key, msg)
+
+socket.send(e_msg)
 
 msg = socket.recv()
 print "Response:", msg

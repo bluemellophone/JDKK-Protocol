@@ -1,5 +1,9 @@
 import sys
 import zmq # networking library
+import aes
+import rsa
+import sha
+import rand
 
 ####################################################
 ################### Init Errors ####################
@@ -41,12 +45,16 @@ print "\
 #################### Main Code #####################
 ####################################################
 
+key = "1234567890123VB67890A23456789012"
+
 while True:
 	msg = socket.recv()
+	msg = aes.aes_decrypt(key, msg)
+	print msg
+	msg = msg.strip(".")
+	msg = msg.split(",")
+	print msg
 
-	if msg[0] == ".":
-		print "Received Handshake"
-		socket.send("handshake")
-	else:
-		print "Received Message:", msg
-		socket.send(msg + " resp")
+	msg = msg[0]
+	print "Received Message:", msg
+	socket.send(msg + " resp")
