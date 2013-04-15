@@ -6,6 +6,44 @@ import rsa
 import sha
 import rand
 
+def pack_handshake(message, crypto_dict):
+	if "auth_username" not in crypto_dict: return False
+	if "auth_password" not in crypto_dict: return False
+	if "rsa_user_private_key" not in crypto_dict: return False
+	if "rsa_server_public_key" not in crypto_dict: return False
+
+   # - Client Handshake = "handshake", RPI Email, SIS Password, New / First Client Nonce, Padding
+   #    - Hashed Client Handshake = Client Handshake, Hash^SHA-512( Client Handshake )
+   #       - Signed Hashed Client Handshake = Hashed Client Handshake, Sign^RSA-USER PRIVATE KEY( Hashed Client Handshake )   
+   #          - RSA Encrypted Signed Hashed Client Handshake = Encrypt^RSA-SERVER PUBLIC KEY( Signed Hashed Client Handshake )
+
+
+
+
+def pack_message(message, crypto_dict):
+	if "auth_username" not in crypto_dict: return False
+	if "auth_password" not in crypto_dict: return False
+	if "server_nonce" not in crypto_dict: return False
+	if "rsa_user_private_key" not in crypto_dict: return False
+	if "aes_session_key" not in crypto_dict: return False
+	
+   # - Ballot = User Ballot
+   #    - Client Message = Ballot, RPI Email, SIS Password, New Client Nonce, Last Server Nonce, Padding
+   #       - Hashed Client Message = Client Message, Hash^SHA-512( Client Message )
+   #          - Signed Hashed Client Message = Hashed Client Message, Sign^RSA-USER PRIVATE KEY( Hashed Client Message )
+   #             - AES Encrypted Signed Hashed Client Message = Encrypt^AES-SESSION KEY( Signed Hashed Client Message )
+
+
+
+def unpack_handshake(message, crypto_dict):
+	if "rsa_user_private_key" not in crypto_dict: return False
+	if "rsa_server_public_key" not in crypto_dict: return False
+
+def unpack_message(message, crypto_dict):
+	if "rsa_server_public_key" not in crypto_dict: return False
+	if "aes_session_key" not in crypto_dict: return False
+
+
 ####################################################
 ################### Init Errors ####################
 ####################################################
@@ -45,6 +83,18 @@ print "\
 ####################################################
 #################### Main Code #####################
 ####################################################
+
+crypto_dictionary = {
+	"auth_username" : False ,
+	"auth_password" : False ,
+	"client_nonce" : False ,
+	"server_nonce" :False ,
+	"rsa_user_private_key" : False ,
+	"rsa_server_public_key" : False ,
+	"aes_session_key" : False ,
+}
+
+print crypto_dictionary
 
 # email = getpass.getpass("RCS ID:")
 # password = getpass.getpass("SIS Password:")

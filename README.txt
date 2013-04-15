@@ -54,7 +54,7 @@ Handshake
 Message
    - Ballot = User Ballot
       - Client Message = Ballot, RPI Email, SIS Password, New Client Nonce, Last Server Nonce, Padding
-         - Hashed Client Message = Signed Client Message, Hash^SHA-512( Client Message )
+         - Hashed Client Message = Client Message, Hash^SHA-512( Client Message )
             - Signed Hashed Client Message = Hashed Client Message, Sign^RSA-USER PRIVATE KEY( Hashed Client Message )
                - AES Encrypted Signed Hashed Client Message = Encrypt^AES-SESSION KEY( Signed Hashed Client Message )
 
