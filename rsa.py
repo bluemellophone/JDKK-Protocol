@@ -1,3 +1,4 @@
+from Crypto.PublicKey import RSA
 import sha
 
 # globals, maybe define somewhere else?

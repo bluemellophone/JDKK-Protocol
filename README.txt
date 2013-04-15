@@ -45,11 +45,13 @@ Handshake
       - Hashed Client Handshake = Client Handshake, Hash^SHA-512( Client Handshake )
          - Signed Hashed Client Handshake = Hashed Client Handshake, Sign^RSA-USER PRIVATE KEY( Hashed Client Handshake )   
             - RSA Encrypted Signed Hashed Client Handshake = Encrypt^RSA-SERVER PUBLIC KEY( Signed Hashed Client Handshake )
+               - Encoded RSA Encrypted Signed Hashed Client Handshake = Encode^BASE64( RSA Encrypted Signed Hashed Client Handshake )
 
    - Server Handshake = "handshake", Last Client Nonce, New / First Server Nonce, AES Session Key, AES Session Block, Padding
       - Hashed Server Handshake = Server Handshake, Hash^SHA-512( Server Handshake )
          - Signed Hashed Server Handshake = Hashed Server Handshake, Sign^RSA-SERVER PRIVATE KEY( Hashed Server Handshake )
             - RSA Encrypted Signed Hashed Server Handshake = Encrypt^RSA-USERNAME PUBLIC KEY( Signed Hashed Server Handshake ) ]
+               - Encoded RSA Encrypted Signed Hashed Server Handshake = Encode^BASE64( RSA Encrypted Signed Hashed Server Handshake ) ]
 
 Message
    - Ballot = User Ballot
@@ -57,11 +59,13 @@ Message
          - Hashed Client Message = Client Message, Hash^SHA-512( Client Message )
             - Signed Hashed Client Message = Hashed Client Message, Sign^RSA-USER PRIVATE KEY( Hashed Client Message )
                - AES Encrypted Signed Hashed Client Message = Encrypt^AES-SESSION KEY( Signed Hashed Client Message )
+                  - Encoded AES Encrypted Signed Hashed Client Message = Encode^BASE64( AES Encrypted Signed Hashed Client Message )
 
    - Server Message = Status, Last Client Nonce, New Server Nonce, Padding
       - Hashed Server Message = Server Message, Hash^SHA-512( Server Message )
          - Signed Hashed Server Message = Hashed Server Message, Sign^RSA-SERVER PRIVATE KEY( Hashed Server Message )
             - AES Encrypted Signed Hashed Server Message = Encrypt^AES-SESSION KEY( Signed Hashed Server Message )
+               - Encoded AES Encrypted Signed Hashed Server Message = Encode^BASE64( AES Encrypted Signed Hashed Server Message )
 
 
 
