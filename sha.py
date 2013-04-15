@@ -10,6 +10,3 @@ def sha256(input):
 # append hash to input, delimit with ','
 def append_sha256(input):
     return (input + sha256(input))
-
-
-print sha256("hello")
