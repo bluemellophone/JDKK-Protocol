@@ -1,5 +1,6 @@
 from Crypto.PublicKey import RSA
 import sha
+import base64
 
 # globals, maybe define somewhere else?
 MSG_LENGTH = 50
@@ -26,14 +27,14 @@ def incomming(dec_k, sig_k, message, nonce):
 # Basic RSA methods
 # Do all processing as long type for consistency
 def sign(key, message):
-    if type(message) is str:
-        message = atol(message)
+    # if type(message) is str:
+    #     message = atol(message)
     #return key.sign(message, 0)[0]
     return key.decrypt(message)
     
 def unsign(key, message):
-    if type(message) is str:
-        message = atol(message)
+    # if type(message) is str:
+    #     message = atol(message)
     return key.encrypt(message, 0)[0]
     
     

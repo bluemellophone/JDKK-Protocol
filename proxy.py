@@ -45,7 +45,7 @@ except Exception as inst:
 	print "Error: client socket initialization (", inst, ")"
 	sys.exit(0)
 
-print "\
+print "\n\n\
 --------------------------------------------------------------------------- \n\
 |     _ ___  _  ___  __ __   __   _   _             ___                   | \n\
 |  _ | |   \| |/ / |/ / \ \ / /__| |_(_)_ _  __ _  | _ \_ _ _____ ___  _  | \n\
@@ -61,9 +61,9 @@ print "\
 
 while True:
     msg = socketServer.recv()
-    print "Forwarding to Server:", msg
+    print "Forwarding to Server (len:" + str(len(msg)) + ")"
     socketClient.send(msg)
     
     msg = socketClient.recv()
-    print "Forwarding to Client:", msg
+    print "Forwarding to Client (len:" + str(len(msg)) + ")"
     socketServer.send(msg)
