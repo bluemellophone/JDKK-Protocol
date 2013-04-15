@@ -1,10 +1,11 @@
 import sys
+import math
 import inspect
 import getpass
-import zmq # networking library
+import zmq
 import aes
-from Crypto.PublicKey import RSA
 import rsa
+from Crypto.PublicKey import RSA
 import sha
 import rand
 import base64
@@ -27,7 +28,7 @@ def pack_handshake(message, crypto_dict, verbose = False):
 
 	for required_key in required_keys:
 		if required_key not in crypto_dict or not crypto_dict[required_key]: 
-			return [False, "Error [ " + str(inspect.stack()[0][3]) + "]: key '" + str(required_key) + "' error in crypto_dictionary"]
+			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
 
 	# Update client nonce
 	try:
@@ -65,20 +66,33 @@ def pack_handshake(message, crypto_dict, verbose = False):
 	
 	debug(verbose, "signed_message", signed_message)
 
+	if verbose:
+		print "Debug: Signed message is being split into " + str(int(math.ceil( len(signed_message) / 256 )) + 1) + " messages."
+
 	# Encrypt message
 	try:
-		rsa_encrypted_message = str(rsa.encrypt(crypto_dict["rsa_server_public_key"], signed_message))
+		rsa_encrypted_messages = []
+		for i in range(0, int(math.ceil( len(signed_message) / 256 )) + 1):
+			rsa_encrypted_messages.append(str(rsa.encrypt(crypto_dict["rsa_server_public_key"], signed_message[ (i * 256) : (i + 1) * 256 ])))
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rsa.encrypt ]: " + str(inst)]
 
 	# Encode message
 	try:
-		encoded_message = base64.b64encode(rsa_encrypted_message)
+		encoded_messages = []
+		for rsa_encrypted_message in rsa_encrypted_messages:
+			encoded_messages.append(base64.b64encode(rsa_encrypted_message))
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> base64.b64encode ]: " + str(inst)]
 
-	debug(verbose, "encoded_message", encoded_message)
+	encoded_message = ""
+	for i in range(len(encoded_messages)):
+		debug(verbose, "encoded_message ( Part " + str( i + 1 ) + " )", encoded_messages[i])
+		encoded_message += encoded_messages[i] + "|"
+	encoded_message = encoded_message[:-1]
 
+	debug(verbose, "encoded_message" , encoded_message)
+	
 	return [True, encoded_message]
 
 def pack_message(message, crypto_dict, verbose = False):
@@ -88,7 +102,7 @@ def pack_message(message, crypto_dict, verbose = False):
 	
 	for required_key in required_keys:
 		if required_key not in crypto_dict or not crypto_dict[required_key]: 
-			return [False, "Error [ " + str(inspect.stack()[0][3]) + "]: key '" + str(required_key) + "' error in crypto_dictionary"]
+			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
 
 	# Update client nonce
 	try:
@@ -121,13 +135,13 @@ def pack_message(message, crypto_dict, verbose = False):
 	# Sign message
 	try:
 		signed_message = hashed_message + "|" + str(rsa.sign(crypto_dict["rsa_user_private_key"], hashed_message))
-
-		# Padding signed_message to length of 128
-		while len(signed_message) % 16 != 0:
-			signed_message += "."
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rsa.sign ]: " + str(inst)]
 	
+	# Padding signed_message to length of 128 (AES encryption needs message to be a length of multiple 16)
+	while len(signed_message) % 16 != 0:
+		signed_message += "."
+
 	debug(verbose, "signed_message", signed_message)
 
 	# Encrypt message
@@ -193,48 +207,33 @@ crypto_dictionary = {
 	"server_nonce" :False ,
 	"rsa_user_private_key" : False ,
 	"rsa_server_public_key" : False ,
-	"aes_session_key" : False ,
+	"aes_session_key" : False
 }
 
+# Temporary
 crypto_dictionary["auth_username"] = "test@rpi.edu"
 crypto_dictionary["auth_password"] = "pa$$w0r|)"
-crypto_dictionary["server_nonce"] = "4321"
+crypto_dictionary["server_nonce"] = "43210"
 crypto_dictionary["rsa_user_private_key"] = RSA.importKey(open("keys/client.private", "r").read())
 crypto_dictionary["rsa_server_public_key"] = RSA.importKey(open("keys/server.public", "r").read())
 crypto_dictionary["aes_session_key"] = "12345678901234567890123456789012"
 
 handshake = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
 
-print "\n"
-handshake = pack_message("message", crypto_dictionary, GLOBAL_VERBOSE)
+if handshake[0]:
+	try:
+		socket.send(handshake[1])
+	except Exception as inst:
+		print "Error [ socket.send ]: " + str(inst)
+		sys.exit(0)
+else:
+	print handshake[1]
 
-# email = getpass.getpass("RCS ID:")
-# password = getpass.getpass("SIS Password:")
 
-# email = "parhaj@rpi.edu"
-# password = "TemPa$$w0rd"
-
-# if len(email) > 32:
-# 	email = email[:32]
-
-# if len(password) > 32:
-# 	password = password[:32]
-
-# # Handshake
-# key = "1234567890123VB67890A23456789012"
-
-# # Cast Ballot
-# # msg = raw_input("Message: ")  
-# msg = "This is an example message!"  
-# msg = msg + "," + email + "," + password
-
-# while len(msg) % 16 != 0:
-# 	msg = msg + "."
-
-# print msg, len(msg)
-# e_msg = aes.aes_encrypt(key, msg)
-
-# socket.send(e_msg)
+# print "\n"
+# handshake = pack_message("message", crypto_dictionary, GLOBAL_VERBOSE)
 
 # msg = socket.recv()
 # print "Response:", msg
+
+

@@ -38,13 +38,13 @@ def unsign(key, message):
     
     
 def decrypt(key, message):
-    if type(message) is str:
-        message = atol(message)
+    # if type(message) is str:
+    #     message = atol(message)
     return key.decrypt(message)
     
 def encrypt(key, message):
-    if type(message) is str:
-        message = atol(message)
+    # if type(message) is str:
+    #     message = atol(message)
     return key.encrypt(message, 0)[0]
 
 
