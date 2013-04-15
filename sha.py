@@ -2,7 +2,7 @@ from Crypto.Hash import SHA256
 
 # pretty basic wrapper
 def sha256(input):
-    temp = SHA256().new()
+    temp = SHA256.new()
     temp.update(input)
     return temp.hexdigest()
 
