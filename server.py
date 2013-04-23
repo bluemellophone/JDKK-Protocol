@@ -38,6 +38,7 @@ def pack_message(message, crypto_dict, verbose = False):
 	return util.pack_message_general(server_message, crypto_dict, "server", verbose)
 
 def unpack_message(encoded_message, crypto_dict, verbose = False):
+	
 	return util.unpack_message_general(encoded_message, crypto_dict, "server", verbose)
 
 ####################################################
@@ -89,6 +90,21 @@ print "\n\n\
 #################### Main Code #####################
 ####################################################
 
+# Open public keys
+c = 1
+registered_voters_public_keys = []
+while True:
+	temp_filename = "keys/public/voter" + str(c) + ".public"
+	try:
+	   with open(temp_filename ): pass
+	except IOError:
+	   break
+
+	registered_voters_public_keys.append( RSA.importKey(open(temp_filename , "r").read()) )
+	c += 1
+
+print registered_voters_public_keys
+
 crypto_dictionary = {
 	"client_nonce" : False ,
 	"server_nonce" :False ,
@@ -100,8 +116,8 @@ crypto_dictionary = {
 # Temporary
 crypto_dictionary["client_nonce"] = "01234"
 crypto_dictionary["server_nonce"] = "43210"
-crypto_dictionary["rsa_user_public_key"] = RSA.importKey(open("keys/client.public", "r").read())
-crypto_dictionary["rsa_server_private_key"] = RSA.importKey(open("keys/server.private", "r").read())
+crypto_dictionary["rsa_user_public_key"] = RSA.importKey(open("keys/public/voter1.public", "r").read())
+crypto_dictionary["rsa_server_private_key"] = RSA.importKey(open("keys/private/server.private", "r").read())
 crypto_dictionary["aes_session_key"] = "12345678901234567890123456789012"
 
 ################## Handshake ####################

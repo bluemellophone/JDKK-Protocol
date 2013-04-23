@@ -8,6 +8,12 @@ import base64
 
 debug_spacing = "   "
 
+def ballot_base(num_regsitered_voters):
+	return int(math.ceil(math.log(num_regsitered_voters,2)))
+
+def ballot_length(num_regsitered_voters, num_candidates):
+	return int(num_candidates) * ballot_base(num_regsitered_voters)
+
 # Debug print out
 def debug(verbose, var_name, var):
 	try:
@@ -26,19 +32,19 @@ def pack_handshake_general(message, crypto_dict, machine, verbose = False):
 		updated_nonce = "client_nonce"
 		required_rsa_sign_key = "rsa_user_private_key"
 		required_rsa_encrypt_key = "rsa_server_public_key"
-		required_keys = ["auth_username", "auth_password", "rsa_user_private_key", "rsa_server_public_key"]
+		required_keys = ["server_nonce", required_rsa_sign_key, required_rsa_encrypt_key]
 	else:
 		updated_nonce = "server_nonce"
 		required_rsa_sign_key = "rsa_server_private_key"
 		required_rsa_encrypt_key = "rsa_user_public_key"
-		required_keys = ["client_nonce", "rsa_user_public_key", "rsa_server_private_key"]
+		required_keys = ["client_nonce", required_rsa_sign_key, required_rsa_encrypt_key]
 
 	# Verify required fields in crypto_dictionary
 	for required_key in required_keys:
 		if required_key not in crypto_dict or not crypto_dict[required_key]: 
 			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
 
-	# Update client nonce
+	# Update nonce
 	try:
 		if machine == "client":
 			crypto_dict[updated_nonce] = "01234"
@@ -116,11 +122,11 @@ def unpack_handshake_general(encoded_message, crypto_dict, machine, verbose = Fa
 	if machine == "client":
 		required_rsa_decrypt_key = "rsa_user_private_key"
 		required_rsa_verify_key = "rsa_server_public_key"
-		required_keys = ["server_nonce", "rsa_user_private_key", "rsa_server_public_key"]
+		required_keys = ["client_nonce", required_rsa_decrypt_key, required_rsa_verify_key]
 	else:
 		required_rsa_decrypt_key = "rsa_server_private_key"
 		required_rsa_verify_key = "rsa_user_public_key"
-		required_keys = ["client_nonce", "rsa_user_public_key", "rsa_server_private_key"]
+		required_keys = [required_rsa_decrypt_key, required_rsa_verify_key]
 
 	# Verify required fields in crypto_dictionary
 	for required_key in required_keys:
@@ -207,11 +213,11 @@ def pack_message_general(message, crypto_dict, machine, verbose = False):
 	if machine == "client":
 		updated_nonce = "client_nonce"
 		required_rsa_key = "rsa_user_private_key"
-		required_keys = ["server_nonce", "rsa_user_private_key", "aes_session_key"]
+		required_keys = ["server_nonce", required_rsa_key, "aes_session_key"]
 	else:
 		updated_nonce = "server_nonce"
 		required_rsa_key = "rsa_server_private_key"
-		required_keys = ["client_nonce", "rsa_server_private_key", "aes_session_key"]
+		required_keys = ["client_nonce", required_rsa_key, "aes_session_key"]
 
 	# Verify required fields in crypto_dictionary
 	for required_key in required_keys:
@@ -287,12 +293,12 @@ def unpack_message_general(encoded_message, crypto_dict, machine, verbose = Fals
 		verify_nonce = "client_nonce"
 		updated_nonce = "server_nonce"
 		required_rsa_key = "rsa_server_public_key"
-		required_keys = ["client_nonce", "rsa_server_public_key", "aes_session_key"]
+		required_keys = [verify_nonce, required_rsa_key, "aes_session_key"]
 	else:
 		verify_nonce = "server_nonce"
 		updated_nonce = "client_nonce"
 		required_rsa_key = "rsa_user_public_key"
-		required_keys = ["client_nonce", "rsa_user_public_key", "aes_session_key"]
+		required_keys = [verify_nonce, required_rsa_key, "aes_session_key"]
 
 	# Verify required fields in crypto_dictionary
 	for required_key in required_keys:
