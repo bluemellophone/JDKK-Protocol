@@ -37,6 +37,7 @@ def nonce_bit(setlength=None):
 			j = j + 1
 	return temp
 
+'''
 #Create a nonce with a length of "setlength" bits
 #Defaults to size of 64 bits
 def rand_bit(setlength=None):
@@ -57,4 +58,3 @@ def rand_bit(setlength=None):
 		j = j + 1
 	return temp
 	
-'''

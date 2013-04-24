@@ -3,7 +3,10 @@ import getpass
 import zmq
 import util
 import inspect
+import sha
 from Crypto.PublicKey import RSA
+
+import rand
 
 ####################################################
 ############### Handshake Functions ################
@@ -12,14 +15,22 @@ from Crypto.PublicKey import RSA
 def pack_handshake(message, crypto_dict, verbose = False):
 	
 	# Verify required fields in crypto_dictionary
-	required_keys = ["auth_username", "auth_password"]
+	required_keys = ["rsa_user_public_key"]
 
 	for required_key in required_keys:
 		if required_key not in crypto_dict or not crypto_dict[required_key]: 
 			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
 
+	# Hash message
+	try:
+		user_public_key_hash = sha.sha256(str(crypto_dict["rsa_user_public_key"]))
+	except Exception as inst:
+		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> sha.sha256 ]: " + str(inst)]
+
+	util.debug(verbose, "user_public_key_hash", user_public_key_hash)
+
 	# Compile message
-	client_message = message + ";" + crypto_dict["auth_username"] + ";" + crypto_dict["auth_password"]
+	client_message = message + ";" + user_public_key_hash
 
 	return util.pack_handshake_general(client_message, crypto_dict, "client", verbose)
 
@@ -37,14 +48,23 @@ def unpack_handshake(encoded_message, crypto_dict, verbose = False):
 def pack_message(message, crypto_dict, verbose = False):
 
 	# Verify required fields in crypto_dictionary
-	required_keys = ["auth_username", "auth_password"]
+	required_keys = ["rsa_user_public_key"]
 
 	# Verify required fields in crypto_dictionary
 	for required_key in required_keys:
 		if required_key not in crypto_dict or not crypto_dict[required_key]: 
 			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
 	
-	client_message = message + ";" + crypto_dict["auth_username"] + ";" + crypto_dict["auth_password"]
+	# Hash message
+	try:
+		user_public_key_hash = sha.sha256(str(crypto_dict["rsa_user_public_key"]))
+	except Exception as inst:
+		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> sha.sha256 ]: " + str(inst)]
+
+	util.debug(verbose, "user_public_key_hash", user_public_key_hash)
+
+	# Compile message
+	client_message = message + ";" + user_public_key_hash
 
 	return util.pack_message_general(client_message, crypto_dict, "client", verbose)
 
@@ -105,22 +125,18 @@ print "\n\n\
 ####################################################
 
 crypto_dictionary = {
-	"auth_username" : False ,
-	"auth_password" : False ,
 	"client_nonce" : False ,
-	"server_nonce" : "" ,
+	"server_nonce" : " " ,
 	"rsa_user_private_key" : False ,
+	"rsa_user_public_key" : False,
 	"rsa_server_public_key" : False ,
 	"aes_session_key" : False
 }
 
 # Temporary
-crypto_dictionary["auth_username"] = "test@rpi.edu"
-crypto_dictionary["auth_password"] = "pa$$w0rd"
-crypto_dictionary["server_nonce"] = "43210"
-crypto_dictionary["rsa_user_private_key"] = RSA.importKey(open("keys/client.private", "r").read())
-crypto_dictionary["rsa_server_public_key"] = RSA.importKey(open("keys/server.public", "r").read())
-crypto_dictionary["aes_session_key"] = "12345678901234567890123456789012"
+crypto_dictionary["rsa_user_private_key"] = RSA.importKey(open("keys/private/voter1.private", "r").read())
+crypto_dictionary["rsa_user_public_key"] = RSA.importKey(open("keys/public/voter1.public", "r").read())
+crypto_dictionary["rsa_server_public_key"] = RSA.importKey(open("keys/public/server.public", "r").read())
 
 ################## Handshake ####################
 
@@ -138,6 +154,9 @@ else:
 response = unpack_handshake(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 if response[0]:
 	print "Handshake Response:", response[1]
+	message = response[1].split(";")
+	crypto_dictionary["aes_session_key"] = message[1]
+	print "Updated AES Session Key:", crypto_dictionary["aes_session_key"]
 else:
 	print response[1]
 	sys.exit(0)

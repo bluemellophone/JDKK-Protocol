@@ -46,10 +46,7 @@ def pack_handshake_general(message, crypto_dict, machine, verbose = False):
 
 	# Update nonce
 	try:
-		if machine == "client":
-			crypto_dict[updated_nonce] = "01234"
-		else:
-			crypto_dict[updated_nonce] = "43210"
+		crypto_dict[updated_nonce] = str(rand.rand_byte(32))[:32]
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rand ]: " + str(inst)]
 
@@ -226,10 +223,7 @@ def pack_message_general(message, crypto_dict, machine, verbose = False):
 
 	# Update machine's nonce
 	try:
-		if machine == "client":
-			crypto_dict[updated_nonce] = "01234"
-		else:
-			crypto_dict[updated_nonce] = "43210"
+		crypto_dict[updated_nonce] = str(rand.rand_byte(32))[:32]
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rand ]: " + str(inst)]
 

@@ -2,6 +2,7 @@ import sys
 import zmq
 import util
 import inspect
+import rand
 from Crypto.PublicKey import RSA
 
 ####################################################
@@ -12,7 +13,7 @@ def pack_handshake(message, crypto_dict, verbose = False):
    	
 	# Update AES session key
 	try:
-		crypto_dict["aes_session_key"] = "12345678901234567890123456789012"
+		crypto_dict["aes_session_key"] = str(rand.rand_byte(32))[:32]
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rand ]: " + str(inst)]
 
@@ -114,11 +115,8 @@ crypto_dictionary = {
 }
 
 # Temporary
-crypto_dictionary["client_nonce"] = "01234"
-crypto_dictionary["server_nonce"] = "43210"
 crypto_dictionary["rsa_user_public_key"] = RSA.importKey(open("keys/public/voter1.public", "r").read())
 crypto_dictionary["rsa_server_private_key"] = RSA.importKey(open("keys/private/server.private", "r").read())
-crypto_dictionary["aes_session_key"] = "12345678901234567890123456789012"
 
 ################## Handshake ####################
 
