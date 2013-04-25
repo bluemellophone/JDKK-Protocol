@@ -12,30 +12,28 @@ import rand
 ############### Handshake Functions ################
 ####################################################
 
+def encodeMessage(message):
+	message = message.replace(".", "^__PERIOD__^")
+	message = message.replace(",", "^__COMMA__^")
+	message = message.replace(";", "^__SEMICOLON__^")
+	message = message.replace("|", "^__PIPE__^")
+	return message
+
 def pack_handshake(message, crypto_dict, verbose = False):
 	
-	# Verify required fields in crypto_dictionary
-	required_keys = ["rsa_user_public_key"]
-
-	for required_key in required_keys:
-		if required_key not in crypto_dict or not crypto_dict[required_key]: 
-			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
-
-	# Hash message
-	try:
-		user_public_key_hash = sha.sha256(str(crypto_dict["rsa_user_public_key"]))
-	except Exception as inst:
-		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> sha.sha256 ]: " + str(inst)]
-
-	util.debug(verbose, "user_public_key_hash", user_public_key_hash)
+	if verbose:
+		print "\n"
 
 	# Compile message
-	client_message = message + ";" + user_public_key_hash
+	client_message = encodeMessage(message) + ";" + crypto_dict["rsa_user_public_key_hash"]
 
 	return util.pack_handshake_general(client_message, crypto_dict, "client", verbose)
 
 def unpack_handshake(encoded_message, crypto_dict, verbose = False):
 	
+	if verbose:
+		print "\n"
+		
 	if encoded_message == "-1":
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: connection closed by server"]
 
@@ -47,29 +45,19 @@ def unpack_handshake(encoded_message, crypto_dict, verbose = False):
 
 def pack_message(message, crypto_dict, verbose = False):
 
-	# Verify required fields in crypto_dictionary
-	required_keys = ["rsa_user_public_key"]
-
-	# Verify required fields in crypto_dictionary
-	for required_key in required_keys:
-		if required_key not in crypto_dict or not crypto_dict[required_key]: 
-			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: key error, '" + str(required_key) + "' in crypto_dictionary"]
-	
-	# Hash message
-	try:
-		user_public_key_hash = sha.sha256(str(crypto_dict["rsa_user_public_key"]))
-	except Exception as inst:
-		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> sha.sha256 ]: " + str(inst)]
-
-	util.debug(verbose, "user_public_key_hash", user_public_key_hash)
-
+	if verbose:
+		print "\n"
+		
 	# Compile message
-	client_message = message + ";" + user_public_key_hash
+	client_message = encodeMessage(message) + ";" + crypto_dict["rsa_user_public_key_hash"]
 
 	return util.pack_message_general(client_message, crypto_dict, "client", verbose)
 
 def unpack_message(encoded_message, crypto_dict, verbose = False):
 	
+	if verbose:
+		print "\n"
+		
 	if encoded_message == "-1":
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: connection closed by server"]
 
@@ -124,26 +112,33 @@ print "\n\n\
 #################### Main Code #####################
 ####################################################
 
+voter_id = -1
+while voter_id < 0 or voter_id > 10:
+	voter_id = int(raw_input("What is your voter number?"))
+
+temp = RSA.importKey(open("keys/public/voter" + str(voter_id) + ".public", "r").read())
+temp_hash = sha.sha256(str(temp.n))
+
 crypto_dictionary = {
-	"client_nonce" : False ,
-	"server_nonce" : " " ,
-	"rsa_user_private_key" : False ,
-	"rsa_user_public_key" : False,
-	"rsa_server_public_key" : False ,
-	"aes_session_key" : False
+	"client_nonces" : { temp_hash : False } ,
+	"server_nonces" : { temp_hash : "0" } , # Default Server Nonce to begin with
+	"rsa_user_public_keys" : { temp_hash: temp } ,
+	"rsa_user_private_key" : RSA.importKey(open("keys/private/voter" + str(voter_id) + ".private", "r").read()) ,
+	"rsa_server_public_key" : { temp_hash : RSA.importKey(open("keys/public/server.public", "r").read()) } ,
+	"aes_session_keys" : { temp_hash : False },
+	"client_aes_id" : False,
+	"rsa_user_public_key_hash" : temp_hash
 }
 
-# Temporary
-crypto_dictionary["rsa_user_private_key"] = RSA.importKey(open("keys/private/voter1.private", "r").read())
-crypto_dictionary["rsa_user_public_key"] = RSA.importKey(open("keys/public/voter1.public", "r").read())
-crypto_dictionary["rsa_server_public_key"] = RSA.importKey(open("keys/public/server.public", "r").read())
-
 ################## Handshake ####################
+
+if GLOBAL_VERBOSE or True:
+	print "User Public Key Hash:", crypto_dictionary["rsa_user_public_key_hash"]
 
 handshake = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
 if handshake[0]:
 	try:
-		socket.send(handshake[1])
+		socket.send("." + handshake[1])
 	except Exception as inst:
 		print "Error [ socket.send (handshake) ]: " + str(inst)
 		sys.exit(0)
@@ -153,10 +148,14 @@ else:
 
 response = unpack_handshake(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 if response[0]:
-	print "Handshake Response:", response[1]
 	message = response[1].split(";")
-	crypto_dictionary["aes_session_key"] = message[1]
-	print "Updated AES Session Key:", crypto_dictionary["aes_session_key"]
+	print "Handshake Response:", message[0]
+	crypto_dictionary["aes_session_keys"][crypto_dictionary["rsa_user_public_key_hash"]] = message[1]
+	crypto_dictionary["client_aes_id"] = message[2]
+
+	if GLOBAL_VERBOSE:
+		print "Updated AES Session Key:", crypto_dictionary["aes_session_keys"][crypto_dictionary["rsa_user_public_key_hash"]]
+		print "Updated AES Session ID:", crypto_dictionary["client_aes_id"]
 else:
 	print response[1]
 	sys.exit(0)
@@ -167,7 +166,8 @@ while True:
 	message = pack_message(raw_input("Message: "), crypto_dictionary, GLOBAL_VERBOSE)
 	if message[0]:
 		try:
-			socket.send(message[1])
+			util.debug(GLOBAL_VERBOSE, "client_aes_id", crypto_dictionary["client_aes_id"])
+			socket.send(crypto_dictionary["client_aes_id"] + "." + message[1])
 		except Exception as inst:
 			print "Error [ socket.send (message) ]: " + str(inst)
 			sys.exit(0)
@@ -177,7 +177,12 @@ while True:
 
 	response = unpack_message(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 	if response[0]:
-		print "Message Response:", response[1]
+		message = response[1].split(";")
+		print "Message Response:", message[0]
+		crypto_dictionary["client_aes_id"] = message[1]
+
+		if GLOBAL_VERBOSE:
+			print "Updated AES Session ID:", crypto_dictionary["client_aes_id"]
 	else:
 		print response[1]
 		sys.exit(0)

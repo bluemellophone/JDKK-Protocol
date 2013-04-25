@@ -91,7 +91,7 @@ Message
          - Hashed Client Message = Client Message, Hash^SHA-512( Client Message )
             - Signed Hashed Client Message = Hashed Client Message, Sign^RSA-USER PRIVATE KEY( Hash of Client Message )
                - AES Encrypted Signed Hashed Client Message = Encrypt^AES-SESSION KEY( Signed Hashed Client Message )
-                  - Encoded AES Encrypted Signed Hashed Client Message = Encode^BASE64( AES Encrypted Signed Hashed Client Message )
+                  - Encoded AES Encrypted Signed Hashed Client Message = AES Session ID . Encode^BASE64( AES Encrypted Signed Hashed Client Message )
 
    - Server Message = Status, Last Client Nonce, New Server Nonce, Padding
       - Hashed Server Message = Server Message, Hash^SHA-512( Server Message )
