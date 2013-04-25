@@ -214,4 +214,5 @@ while True:
 
 	except Exception as inst:
 		print "Error [ MAIN LOOP -> UNKNOWN ORIGIN ]: " + str(inst)
+		socket.send("-1")
 
