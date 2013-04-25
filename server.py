@@ -155,59 +155,63 @@ crypto_dictionary = {
 
 while True:
 
-	received = socket.recv()
+	try:
+		received = socket.recv()
 
-	if received[0] == ".":
-		################## Handshake ####################
-		received = received[1:]
+		if received[0] == ".":
+			################## Handshake ####################
+			received = received[1:]
 
-		handshake = unpack_handshake(received, crypto_dictionary, GLOBAL_VERBOSE)
-		if handshake[0]: 
-			message = handshake[1].split(";")
-			print "Handshake Received:", decodeMessage(message[0])
+			handshake = unpack_handshake(received, crypto_dictionary, GLOBAL_VERBOSE)
+			if handshake[0]: 
+				message = handshake[1].split(";")
+				print "Handshake Received:", decodeMessage(message[0])
 
-			if GLOBAL_VERBOSE:
-				print "User Public Key Hash:", message[1]
+				if GLOBAL_VERBOSE:
+					print "User Public Key Hash:", message[1]
 
-		else:
-			print handshake[1]
-			socket.send("-1")
-			# sys.exit(0)
-
-		response = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
-		if response[0]:
-			try:
-				socket.send(response[1])
-			except Exception as inst:
-				print "Error [ socket.send (handshake) ]: " + str(inst)
+			else:
+				print handshake[1]
+				socket.send("-1")
 				# sys.exit(0)
-		else:
-			print response[1]
-			# sys.exit(0)
 
-	else:
-		################## Messages ####################
-
-		message = unpack_message(received, crypto_dictionary, GLOBAL_VERBOSE)
-		if message[0]:
-			message = message[1].split(";")
-			print "Message Received:", decodeMessage(message[0])
-
-			if GLOBAL_VERBOSE:
-				print "User Public Key Hash:", message[1]
-		else:
-			print message[1]
-			socket.send("-1")
-			# sys.exit(0)
-
-		response = pack_message("ok", crypto_dictionary, GLOBAL_VERBOSE)
-		if response[0]:
-			try:
-				socket.send(response[1])
-			except Exception as inst:
-				print "Error [ socket.send (message) ]: " + str(inst)
+			response = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
+			if response[0]:
+				try:
+					socket.send(response[1])
+				except Exception as inst:
+					print "Error [ socket.send (handshake) ]: " + str(inst)
+					# sys.exit(0)
+			else:
+				print response[1]
 				# sys.exit(0)
+
 		else:
-			print response[1]
-			# sys.exit(0)
+			################## Messages ####################
+
+			message = unpack_message(received, crypto_dictionary, GLOBAL_VERBOSE)
+			if message[0]:
+				message = message[1].split(";")
+				print "Message Received:", decodeMessage(message[0])
+
+				if GLOBAL_VERBOSE:
+					print "User Public Key Hash:", message[1]
+			else:
+				print message[1]
+				socket.send("-1")
+				# sys.exit(0)
+
+			response = pack_message("ok", crypto_dictionary, GLOBAL_VERBOSE)
+			if response[0]:
+				try:
+					socket.send(response[1])
+				except Exception as inst:
+					print "Error [ socket.send (message) ]: " + str(inst)
+					# sys.exit(0)
+			else:
+				print response[1]
+				# sys.exit(0)
+
+	except Exception as inst:
+		print "Error [ MAIN LOOP -> UNKNOWN ORIGIN ]: " + str(inst)
 
