@@ -54,7 +54,7 @@ def pack_handshake_general(message, crypto_dict, machine, verbose = False):
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rand ]: " + str(inst)]
 
-	debug(verbose, updated_nonce, crypto_dict[updated_nonce])
+	debug(verbose, updated_nonce, crypto_dict[updated_nonce][crypto_dict["rsa_user_public_key_hash"]])
 
 	# Compile message
 	nonced_message = message + "," + crypto_dict["client_nonces"][crypto_dict["rsa_user_public_key_hash"]] + "," + crypto_dict["server_nonces"][crypto_dict["rsa_user_public_key_hash"]] + ","

@@ -6,18 +6,16 @@ import inspect
 import sha
 from Crypto.PublicKey import RSA
 
-import rand
-
-####################################################
-############### Handshake Functions ################
-####################################################
-
 def encodeMessage(message):
 	message = message.replace(".", "^__PERIOD__^")
 	message = message.replace(",", "^__COMMA__^")
 	message = message.replace(";", "^__SEMICOLON__^")
 	message = message.replace("|", "^__PIPE__^")
 	return message
+
+####################################################
+############### Handshake Functions ################
+####################################################
 
 def pack_handshake(message, crypto_dict, verbose = False):
 	
@@ -114,7 +112,8 @@ print "\n\n\
 
 voter_id = -1
 while voter_id < 0 or voter_id > 10:
-	voter_id = int(raw_input("What is your voter number?"))
+	voter_id = int(raw_input("What is your voter number? "))
+
 
 temp = RSA.importKey(open("keys/public/voter" + str(voter_id) + ".public", "r").read())
 temp_hash = sha.sha256(str(temp.n))

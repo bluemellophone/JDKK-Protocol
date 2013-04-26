@@ -6,16 +6,16 @@ import rand
 import sha
 from Crypto.PublicKey import RSA
 
-####################################################
-############### Handshake Functions ################
-####################################################
-
 def decodeMessage(message):
 	message = message.replace("^__PERIOD__^", ".")
 	message = message.replace("^__COMMA__^", ",")
 	message = message.replace("^__SEMICOLON__^", ";")
 	message = message.replace("^__PIPE__^", "|")
 	return message
+
+####################################################
+############### Handshake Functions ################
+####################################################
 
 def pack_handshake(message, crypto_dict, verbose = False):
    	
@@ -172,7 +172,11 @@ while True:
 
 			else:
 				print handshake[1]
-				socket.send("-1")
+
+				try:	
+					socket.send("-1")
+				except Exception as inst:
+					print "Error [ MAIN LOOP -> Server Connection Closure ]: " + str(inst)
 				# sys.exit(0)
 
 			response = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
@@ -198,7 +202,12 @@ while True:
 					print "User Public Key Hash:", message[1]
 			else:
 				print message[1]
-				socket.send("-1")
+
+				try:	
+					socket.send("-1")
+				except Exception as inst:
+					print "Error [ MAIN LOOP -> Server Connection Closure ]: " + str(inst)
+
 				# sys.exit(0)
 
 			response = pack_message("ok", crypto_dictionary, GLOBAL_VERBOSE)
@@ -214,5 +223,9 @@ while True:
 
 	except Exception as inst:
 		print "Error [ MAIN LOOP -> UNKNOWN ORIGIN ]: " + str(inst)
-		socket.send("-1")
+
+		try:	
+			socket.send("-1")
+		except Exception as inst:
+			print "Error [ MAIN LOOP -> UNKNOWN ORIGIN -> Server Connection Closure ]: " + str(inst)
 
