@@ -8,8 +8,7 @@ GLOBAL_VERBOSE = "-v" in sys.argv
 if GLOBAL_VERBOSE:
 	sys.argv.remove("-v")
 
-
-candidates_list = ["A. Baker", "C. Dwight", "E. Fredricks", "G. Hayes", "I. Jackson", "K. Lowe", "M. Newman", "O. Parker", "Q. Revas", "S. Taylor", "U. Victor", "W. Xi", "Y. Zetterburg"] # Names supplied by my wife
+print "\n\n------------------------------------------------------------------------------- \n"
 
 # Open public keys
 c = 1
@@ -33,14 +32,11 @@ if GLOBAL_VERBOSE:
 
 candidates = {}
 Base = util.ballot_base(len(registered_voters_public_keys))
-for i in range(len(candidates_list)):
-	candidates[int(2 ** (Base * i))] = candidates_list[i]
-
+for i in range(len(util.candidates_list)):
+	candidates[int(2 ** (Base * i))] = util.candidates_list[i]
 
 private_key = paillier.PAILLIER_Private("keys/private/homomorphic.private")
-
 d = paillier.decrypt(long(open("votes.txt" , "r").read()), private_key)
-print "Ballot Decrypted:", d
 
 result = paillier.tally(candidates.keys(), d)
 winners = []
@@ -52,7 +48,8 @@ for key in sorted(result.keys()):
 				winners.append(candidates[k])
 			print "Candidate", candidates[k], "has", result[key], "votes"
 			break
-print winners
+
+print "\n-------------------------------------------------------------------------------"
 
 print " "
 if len(winners) > 1:
@@ -63,3 +60,5 @@ elif len(winners) == 1:
 	print "The winner of the election is Candidate", winners[0]
 else:
 	print "Election error."
+
+print " "

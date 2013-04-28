@@ -113,12 +113,12 @@ L = 2 ^ (Base * Candidate Number)
 
 Upon the completion of the vote, the server administrator will publish on the web the following table:
 
-      Hash( Public Key 1 ) -> Encrypted Ballot 1 -> Signature of Ballot 1
-      Hash( Public Key 2 ) -> Encrypted Ballot 2 -> Signature of Ballot 2
+      Encode^BASE^64( Public Key 1 ) -> Homomorphically Encrypted Ballot 1 -> Encode^BASE^64( Signature of Ballot 1 )
+      Encode^BASE^64( Public Key 2 ) -> Homomorphically Encrypted Ballot 2 -> Encode^BASE^64( Signature of Ballot 2 )
       .
       .
       .
-      Hash( Public Key T ) -> Encrypted Ballot T -> Signature of Ballot T   ( Where T = Number of Votes Casted and T <= X )
+      Encode^BASE^64( Public Key T ) -> Homomorphically Encrypted Ballot T -> Encode^BASE^64( Signature of Ballot T )  ( Where T = Number of Votes Casted and T <= X )
     
       Homomorphic Sum of all Encrypted Ballots
 
@@ -131,11 +131,5 @@ person wishing to do so.
 
 The server administrator will therefore, not be able to manufacture a fake student without RPI's SIS system detecting a false 
 voter because SIS can audit the published public key hashes.
-
-
-
-TODO
---------
-Fix server close message
 
    

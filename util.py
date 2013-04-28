@@ -7,7 +7,9 @@ import rand
 import base64
 
 debug_spacing = "   "
-padding_length = 2048
+padding_length = 1536 # 1024 + 512
+
+candidates_list = ["A. Baker", "C. Dwight", "E. Fredricks", "G. Hayes", "I. Jackson", "K. Lowe", "M. Newman", "O. Parker", "Q. Revas", "S. Taylor", "U. Victor", "W. Xi", "Y. Zetterburg"] # Names supplied by my wife
 
 def ballot_base(num_regsitered_voters):
 	return int(math.ceil(math.log(num_regsitered_voters,2))) + 1
@@ -96,7 +98,7 @@ def pack_handshake_general(message, crypto_dict, machine, verbose = False):
 	try:
 		rsa_encrypted_messages = []
 		for i in range(0, num_message_parts):
-			rsa_encrypted_messages.append(str(rsa.encrypt(crypto_dict[required_rsa_encrypt_key][crypto_dict["rsa_user_public_key_hash"]], signed_message[ (i * 256) : (i + 1) * 256 ])))
+			rsa_encrypted_messages.append(str(rsa.encrypt(crypto_dict[required_rsa_encrypt_key][crypto_dict["rsa_user_public_key_hash"]][0], signed_message[ (i * 256) : (i + 1) * 256 ])))
 
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> rsa.encrypt ]: " + str(inst)]
@@ -196,7 +198,7 @@ def unpack_handshake_general(encoded_message, crypto_dict, machine, verbose = Fa
 
 	# Verify Signature
 	try:
-		if str(rsa.unsign(crypto_dict[required_rsa_verify_key][crypto_dict["rsa_user_public_key_hash"]], message_signature)) != message_hash:
+		if str(rsa.unsign(crypto_dict[required_rsa_verify_key][crypto_dict["rsa_user_public_key_hash"]][0], message_signature)) != message_hash:
 			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: signature verification failed"]
 		elif verbose:
 			print debug_spacing + "Debug [ " + str(inspect.stack()[0][3]) + " ]: signature verification passed"	
@@ -399,7 +401,11 @@ def unpack_message_general(encoded_message, crypto_dict, machine, verbose = Fals
 		if machine != "client":
 			temp = message.split(";")
 			temp = temp[1]
-			crypto_dict["rsa_user_public_key"] = crypto_dict["rsa_user_public_keys"][temp]
+			crypto_dict["rsa_user_public_key"] = crypto_dict["rsa_user_public_keys"][temp][0]
+
+			if crypto_dict["rsa_user_public_keys"][temp][1]:
+				return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: user hash already voted"]
+
 
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> Message Parsing ]: " + str(inst)]
@@ -412,7 +418,7 @@ def unpack_message_general(encoded_message, crypto_dict, machine, verbose = Fals
 
 	# Verify Signature
 	try:
-		if str(rsa.unsign(crypto_dict[required_rsa_key][crypto_dict["rsa_user_public_key_hash"]], message_signature_decoded)) != message_hash:
+		if str(rsa.unsign(crypto_dict[required_rsa_key][crypto_dict["rsa_user_public_key_hash"]][0], message_signature_decoded)) != message_hash:
 			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: signature verification failed"]
 		elif verbose:
 			print debug_spacing + "Debug [ " + str(inspect.stack()[0][3]) + " ]: signature verification passed"
@@ -450,5 +456,10 @@ def unpack_message_general(encoded_message, crypto_dict, machine, verbose = Fals
 	if machine == "client":
 		return [True, message]
 	else:
-		return [True, [message, sha.sha256(message_signature)]]
+		try:
+			encoded_public_key = base64.b64encode(crypto_dict[required_rsa_key][crypto_dict["rsa_user_public_key_hash"]][0].publickey().exportKey("PEM"))
+		except Exception as inst:
+			return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> base64.b64encode (Public Key) ]: " + str(inst)]
+
+		return [True, [encoded_public_key, message, base64.b64encode(message_signature)]]
 

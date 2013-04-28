@@ -5,6 +5,8 @@ import inspect
 import rand
 import sha
 import paillier
+import base64
+import rsa
 from Crypto.PublicKey import RSA
 
 def decodeMessage(message):
@@ -13,6 +15,20 @@ def decodeMessage(message):
 	message = message.replace("^__SEMICOLON__^", ";")
 	message = message.replace("^__PIPE__^", "|")
 	return message
+
+def closeConnection(crypto_dict, verbose):
+
+	if verbose:
+		print " "
+		print util.debug_spacing + "Debug: Closing connection with client."
+
+	try:
+		close_message = "." + base64.b64encode(rsa.sign(crypto_dict["rsa_server_private_key"], "close"))
+		util.debug(verbose, "close_message", close_message)
+		return close_message
+	except Exception as inst:
+		return [False, "Error [ " + str(inspect.stack()[0][3]) + "]: " + str(inst)]
+
 
 ####################################################
 ############### Handshake Functions ################
@@ -125,9 +141,6 @@ print "\n\n\
 #################### Main Code #####################
 ####################################################
 
-
-candidates_list = ["A. Baker", "C. Dwight", "E. Fredricks", "G. Hayes", "I. Jackson", "K. Lowe", "M. Newman", "O. Parker", "Q. Revas", "S. Taylor", "U. Victor", "W. Xi", "Y. Zetterburg"] # Names supplied by my wife
-
 open("public.txt" , "w").close()
 open("votes.txt" , "w").close()
 
@@ -143,7 +156,7 @@ while True:
 
 	temp_key = RSA.importKey(open(temp_filename , "r").read())
 	temp_hash = sha.sha256(str(temp_key.n))
-	registered_voters_public_keys[temp_hash] = temp_key
+	registered_voters_public_keys[temp_hash] = [ temp_key, False ]
 	c += 1
 
 if GLOBAL_VERBOSE: 
@@ -153,8 +166,8 @@ if GLOBAL_VERBOSE:
 
 candidates = {}
 Base = util.ballot_base(len(registered_voters_public_keys))
-for i in range(len(candidates_list)):
-	candidates[int(2 ** (Base * i))] = candidates_list[i]
+for i in range(len(util.candidates_list)):
+	candidates[int(2 ** (Base * i))] = util.candidates_list[i]
 
 if GLOBAL_VERBOSE: 
 	print "Candidates Dictionary:"
@@ -184,29 +197,28 @@ while True:
 			handshake = unpack_handshake(received, crypto_dictionary, GLOBAL_VERBOSE)
 			if handshake[0]: 
 				message = handshake[1].split(";")
-				print "Handshake Received:", decodeMessage(message[0])
+				print "Handshake Received:", message[1]
+				print " "
 
-				if GLOBAL_VERBOSE:
-					print "User Public Key Hash:", message[1]
+				response = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
+				if response[0]:
+					try:
+						socket.send(response[1])
+					except Exception as inst:
+						print "Error [ socket.send (handshake) ]: " + str(inst)
+						print " "
+						# sys.exit(0)
+				else:
+					print response[1]
+					# sys.exit(0)
 
 			else:
 				print handshake[1]
 
 				try:	
-					socket.send("-1")
+					socket.send(closeConnection(crypto_dictionary, GLOBAL_VERBOSE))
 				except Exception as inst:
 					print "Error [ MAIN LOOP -> Server Connection Closure ]: " + str(inst)
-				# sys.exit(0)
-
-			response = pack_handshake("handshake", crypto_dictionary, GLOBAL_VERBOSE)
-			if response[0]:
-				try:
-					socket.send(response[1])
-				except Exception as inst:
-					print "Error [ socket.send (handshake) ]: " + str(inst)
-					# sys.exit(0)
-			else:
-				print response[1]
 				# sys.exit(0)
 
 		else:
@@ -215,16 +227,20 @@ while True:
 			message = unpack_message(received, crypto_dictionary, GLOBAL_VERBOSE)
 			if message[0]:
 
-				msg_ballot = message[1][0]
-				msg_signature = message[1][1]
+				msg_public_key = message[1][0]
+				msg_ballot = message[1][1]
+				msg_signature = message[1][2]
 				message = msg_ballot.split(";")
 				msg = decodeMessage(message[0])
 				msg_hash = message[1]
 
-				print "Received:", msg_hash, msg, msg_signature
+				crypto_dictionary["rsa_user_public_keys"][msg_hash][1] = True
+
+				rec = str(msg_public_key) + " | " + str(msg) + " | " + str(msg_signature) + "\n"
+				print "Received:", rec
 
 				with open("public.txt", "a") as publictxt:
-				    publictxt.write(str(msg_hash) + " | " + str(msg) + " | " + str(msg_signature))
+				    publictxt.write(rec)
 
 				votestxttemp = open("votes.txt", "r")
 				temp = votestxttemp.read()
@@ -235,36 +251,39 @@ while True:
 					votestxt.write(str(long(msg)))
 				else:
 					d = paillier.add(long(temp), long(msg), paillier.PAILLIER_Private("keys/private/homomorphic.private"))
-					print "test: ", paillier.decrypt(d, paillier.PAILLIER_Private("keys/private/homomorphic.private"))
 					votestxt.write(str(d))
 				votestxt.close()
 				
+				response = pack_message("ok", crypto_dictionary, GLOBAL_VERBOSE)
+				if response[0]:
+					try:
+						socket.send(response[1])
+					except Exception as inst:
+						print " "
+						print "Error [ socket.send (message) ]: " + str(inst)
+						print " "
+						# sys.exit(0)
+				else:
+					print response[1]
+					# sys.exit(0)
+
 			else:
+
 				print message[1]
+				print " "
 
 				try:	
-					socket.send("-1")
+					socket.send(closeConnection(crypto_dictionary, GLOBAL_VERBOSE))
 				except Exception as inst:
 					print "Error [ MAIN LOOP -> Server Connection Closure ]: " + str(inst)
 
-				# sys.exit(0)
-
-			response = pack_message("ok", crypto_dictionary, GLOBAL_VERBOSE)
-			if response[0]:
-				try:
-					socket.send(response[1])
-				except Exception as inst:
-					print "Error [ socket.send (message) ]: " + str(inst)
-					# sys.exit(0)
-			else:
-				print response[1]
 				# sys.exit(0)
 
 	except Exception as inst:
 		print "Error [ MAIN LOOP -> UNKNOWN ORIGIN ]: " + str(inst)
 
 		try:	
-			socket.send("-1")
+			socket.send(closeConnection(crypto_dictionary, GLOBAL_VERBOSE))
 		except Exception as inst:
 			print "Error [ MAIN LOOP -> UNKNOWN ORIGIN -> Server Connection Closure ]: " + str(inst)
 

@@ -5,6 +5,8 @@ import util
 import inspect
 import sha
 import paillier
+import rsa
+import base64
 from Crypto.PublicKey import RSA
 
 def encodeMessage(message):
@@ -15,6 +17,14 @@ def encodeMessage(message):
 	message = message.replace(";", "^__SEMICOLON__^")
 	message = message.replace("|", "^__PIPE__^")
 	return message
+
+def verifyCloseConnection(crypto_dict, message):
+	try:
+		decode = base64.b64decode(message)
+		key = crypto_dict["rsa_server_public_key"][crypto_dict["rsa_user_public_key_hash"]][0]
+		return [True, rsa.unsign(key, decode)]
+	except Exception as inst:
+		return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: " + str(inst)]
 
 def print_candidates(crypto_dict):
 	cand = crypto_dict["candidates"]
@@ -45,8 +55,15 @@ def unpack_handshake(encoded_message, crypto_dict, verbose = False):
 	if verbose:
 		print "\n"
 		
-	if encoded_message == "-1":
-		return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: connection closed by server"]
+	if "." in encoded_message:
+		encoded_message = encoded_message[1:]
+		vcc = verifyCloseConnection(crypto_dict, encoded_message)
+		if vcc[0]:
+			if vcc[1] == "close":
+				return [False, "Error: connection closed by server"]
+			else:
+				return [False, "Error: connection closed for an unknown reason, possibly malicious"]
+		return vcc
 
 	return util.unpack_handshake_general(encoded_message, crypto_dict, "client", verbose)
 
@@ -69,9 +86,16 @@ def unpack_message(encoded_message, crypto_dict, verbose = False):
 	if verbose:
 		print "\n"
 		
-	if encoded_message == "-1":
-		return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: connection closed by server"]
-
+	if "." in encoded_message:
+		encoded_message = encoded_message[1:]
+		vcc = verifyCloseConnection(crypto_dict, encoded_message)
+		if vcc[0]:
+			if vcc[1] == "close":
+				return [False, "Error: connection closed by server"]
+			else:
+				return [False, "Error: connection closed for an unknown reason, possibly malicious"]
+		return vcc
+		
 	return util.unpack_message_general(encoded_message, crypto_dict, "client", verbose)
 
 ####################################################
@@ -123,9 +147,21 @@ print "\n\n\
 #################### Main Code #####################
 ####################################################
 
+c = 1
+registered_voters_public_keys = {}
+while True:
+	temp_filename = "keys/public/voter" + str(c) + ".public"
+	try:
+	   with open(temp_filename ): pass
+	except IOError:
+	   break
+
+	c += 1
+c -= 1
+
 voter_id = -1
-while voter_id < 0 or voter_id > 10:
-	voter_id = int(raw_input("What is your voter number? "))
+while voter_id < 1 or voter_id > c:
+	voter_id = int(raw_input("What is your voter number (1 - " + str(c) + ")? "))
 
 
 temp = RSA.importKey(open("keys/public/voter" + str(voter_id) + ".public", "r").read())
@@ -134,9 +170,9 @@ temp_hash = sha.sha256(str(temp.n))
 crypto_dictionary = {
 	"client_nonces" : { temp_hash : False } ,
 	"server_nonces" : { temp_hash : "0" } , # Default Server Nonce to begin with
-	"rsa_user_public_keys" : { temp_hash: temp } ,
+	"rsa_user_public_keys" : { temp_hash: [ temp, False ] } ,
 	"rsa_user_private_key" : RSA.importKey(open("keys/private/voter" + str(voter_id) + ".private", "r").read()) ,
-	"rsa_server_public_key" : { temp_hash : RSA.importKey(open("keys/public/server.public", "r").read()) } ,
+	"rsa_server_public_key" : { temp_hash : [ RSA.importKey(open("keys/public/server.public", "r").read()), False ] } ,
 	"homomorphic_public_key" : paillier.PAILLIER_Public("keys/public/homomorphic.public"),
 	"aes_session_keys" : { temp_hash : False },
 	"client_aes_id" : False ,
@@ -191,12 +227,13 @@ else:
 
 ################## Messages ####################
 
-while True:
-	print_candidates(crypto_dictionary)
-	
+status = 0
+while status != "ok":	
 	vote_original = 0
 	vote_verification = 0
 	while vote_original != vote_verification or (vote_original == 0 and vote_verification == 0):
+		print_candidates(crypto_dictionary)
+
 		if vote_original != vote_verification:
 			print "Vote Verification Failed!\n"
 
@@ -224,22 +261,29 @@ while True:
 			print "Error [ socket.send (message) ]: " + str(inst)
 			sys.exit(0)
 	else:
+		print "--------------------------------------------------------------------------------\n"
 		print message[1]
+		print " "
 		sys.exit(0)
 
 	response = unpack_message(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 	if response[0]:
 		if GLOBAL_VERBOSE:
-			print "Received Handshake:", response[1]
+			print "Received Message:", response[1]
 
 		message = response[1].split(";")
-		print "Message Response:", message[0]
+		status = message[0]
 		crypto_dictionary["client_aes_id"] = message[1]
 
 		if GLOBAL_VERBOSE:
 			print "Updated AES Session ID:", crypto_dictionary["client_aes_id"]
 	else:
+		print "--------------------------------------------------------------------------------\n"
 		print response[1]
+		print " "
 		sys.exit(0)
 
+print "--------------------------------------------------------------------------------\n"
+print "Thank you for voting, Goodbye! "
+print " "
 
