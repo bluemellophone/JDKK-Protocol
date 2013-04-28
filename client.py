@@ -4,14 +4,27 @@ import zmq
 import util
 import inspect
 import sha
+import paillier
 from Crypto.PublicKey import RSA
 
 def encodeMessage(message):
+	message = str(message)
+
 	message = message.replace(".", "^__PERIOD__^")
 	message = message.replace(",", "^__COMMA__^")
 	message = message.replace(";", "^__SEMICOLON__^")
 	message = message.replace("|", "^__PIPE__^")
 	return message
+
+def print_candidates(crypto_dict):
+	cand = crypto_dict["candidates"]
+
+	print "\n-------------------------------------------------------------------------------- \n"
+	print "Candidates:"
+	for key in sorted(cand.keys()):
+		print "   " + str(key) + " - " + str(cand[key][1])
+
+	print "\n-------------------------------------------------------------------------------- \n"
 
 ####################################################
 ############### Handshake Functions ################
@@ -124,9 +137,11 @@ crypto_dictionary = {
 	"rsa_user_public_keys" : { temp_hash: temp } ,
 	"rsa_user_private_key" : RSA.importKey(open("keys/private/voter" + str(voter_id) + ".private", "r").read()) ,
 	"rsa_server_public_key" : { temp_hash : RSA.importKey(open("keys/public/server.public", "r").read()) } ,
+	"homomorphic_public_key" : paillier.PAILLIER_Public("keys/public/homomorphic.public"),
 	"aes_session_keys" : { temp_hash : False },
-	"client_aes_id" : False,
-	"rsa_user_public_key_hash" : temp_hash
+	"client_aes_id" : False ,
+	"rsa_user_public_key_hash" : temp_hash ,
+	"candidates": False
 }
 
 ################## Handshake ####################
@@ -147,14 +162,29 @@ else:
 
 response = unpack_handshake(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 if response[0]:
+	if GLOBAL_VERBOSE:
+		print "Received Handshake:", response[1]
+
 	message = response[1].split(";")
 	print "Handshake Response:", message[0]
 	crypto_dictionary["aes_session_keys"][crypto_dictionary["rsa_user_public_key_hash"]] = message[1]
 	crypto_dictionary["client_aes_id"] = message[2]
+	candidate_string = message[3]
+	
+	candidates = {}
+	counter = 1
+	for candidate in candidate_string.split("-"):
+		if ":" in candidate:
+			candidate = candidate.split(":")
+			candidates[counter] = (int(candidate[0]), candidate[1])
+			counter += 1
+
+	crypto_dictionary["candidates"] = candidates
 
 	if GLOBAL_VERBOSE:
 		print "Updated AES Session Key:", crypto_dictionary["aes_session_keys"][crypto_dictionary["rsa_user_public_key_hash"]]
 		print "Updated AES Session ID:", crypto_dictionary["client_aes_id"]
+		print "Updated Candidates Dictionary", crypto_dictionary["candidates"]
 else:
 	print response[1]
 	sys.exit(0)
@@ -162,7 +192,10 @@ else:
 ################## Messages ####################
 
 while True:
-	message = pack_message(raw_input("Message: "), crypto_dictionary, GLOBAL_VERBOSE)
+	print_candidates(crypto_dictionary)
+	
+	message = raw_input("Message: ")
+	message = pack_message(paillier.encrypt(crypto_dictionary["candidates"][12][0], crypto_dictionary["homomorphic_public_key"]), crypto_dictionary, GLOBAL_VERBOSE)
 	if message[0]:
 		try:
 			util.debug(GLOBAL_VERBOSE, "client_aes_id", crypto_dictionary["client_aes_id"])
@@ -173,9 +206,12 @@ while True:
 	else:
 		print message[1]
 		sys.exit(0)
-
+		
 	response = unpack_message(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 	if response[0]:
+		if GLOBAL_VERBOSE:
+			print "Received Handshake:", response[1]
+
 		message = response[1].split(";")
 		print "Message Response:", message[0]
 		crypto_dictionary["client_aes_id"] = message[1]

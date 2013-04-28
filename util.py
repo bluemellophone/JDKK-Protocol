@@ -7,10 +7,10 @@ import rand
 import base64
 
 debug_spacing = "   "
-padding_length = 512
+padding_length = 2048
 
 def ballot_base(num_regsitered_voters):
-	return int(math.ceil(math.log(num_regsitered_voters,2)))
+	return int(math.ceil(math.log(num_regsitered_voters,2))) + 1
 
 def ballot_length(num_regsitered_voters, num_candidates):
 	return int(num_candidates) * ballot_base(num_regsitered_voters)
