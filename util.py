@@ -406,13 +406,13 @@ def unpack_message_general(encoded_message, crypto_dict, machine, verbose = Fals
 
 	# Decode signature
 	try:
-		message_signature = base64.b64decode(message_signature)
+		message_signature_decoded = base64.b64decode(message_signature)
 	except Exception as inst:
 		return [False, "Error [ " + str(inspect.stack()[0][3]) + " -> base64.b64decode (signature) ]: " + str(inst)]
 
 	# Verify Signature
 	try:
-		if str(rsa.unsign(crypto_dict[required_rsa_key][crypto_dict["rsa_user_public_key_hash"]], message_signature)) != message_hash:
+		if str(rsa.unsign(crypto_dict[required_rsa_key][crypto_dict["rsa_user_public_key_hash"]], message_signature_decoded)) != message_hash:
 			return [False, "Error [ " + str(inspect.stack()[0][3]) + " ]: signature verification failed"]
 		elif verbose:
 			print debug_spacing + "Debug [ " + str(inspect.stack()[0][3]) + " ]: signature verification passed"
@@ -447,5 +447,8 @@ def unpack_message_general(encoded_message, crypto_dict, machine, verbose = Fals
 	if verbose:
 		print "\n"
 		
-	return [True, message]
+	if machine == "client":
+		return [True, message]
+	else:
+		return [True, [message, sha.sha256(message_signature)]]
 

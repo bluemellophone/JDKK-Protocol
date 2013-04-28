@@ -128,6 +128,8 @@ print "\n\n\
 
 candidates_list = ["A. Baker", "C. Dwight", "E. Fredricks", "G. Hayes", "I. Jackson", "K. Lowe", "M. Newman", "O. Parker", "Q. Revas", "S. Taylor", "U. Victor", "W. Xi", "Y. Zetterburg"] # Names supplied by my wife
 
+open("public.txt" , "w").close()
+open("votes.txt" , "w").close()
 
 # Open public keys
 c = 1
@@ -164,7 +166,6 @@ crypto_dictionary = {
 	"server_nonces" : {} ,
 	"rsa_user_public_keys" : registered_voters_public_keys ,
 	"rsa_server_private_key" : RSA.importKey(open("keys/private/server.private", "r").read()) ,
-	"homomorphic_private_key" : paillier.PAILLIER_Private("keys/private/homomorphic.private") , 
 	"aes_session_keys" : {} ,
 	"aes_session_ids" : {} ,
 	"rsa_user_public_key_hash" : False,
@@ -213,37 +214,31 @@ while True:
 
 			message = unpack_message(received, crypto_dictionary, GLOBAL_VERBOSE)
 			if message[0]:
-				message = message[1].split(";")
+
+				msg_ballot = message[1][0]
+				msg_signature = message[1][1]
+				message = msg_ballot.split(";")
 				msg = decodeMessage(message[0])
-				print "Message Received:", msg
+				msg_hash = message[1]
 
-				d = paillier.decrypt(long(msg), crypto_dictionary["homomorphic_private_key"])
-				print "Ballot Decrypted:", d
+				print "Received:", msg_hash, msg, msg_signature
 
-				result = paillier.tally(crypto_dictionary["candidates"].keys(), d)
-				winners = []
-				win = max(result.values())
-				for key in sorted(result.keys()):
-					for k in crypto_dictionary["candidates"].keys():
-						if key == k:
-							if result[key] == win:
-								winners.append(crypto_dictionary["candidates"][k])
-							print "Candidate", crypto_dictionary["candidates"][k], "has", result[key], "votes"
-							break
-				print winners
+				with open("public.txt", "a") as publictxt:
+				    publictxt.write(str(msg_hash) + " | " + str(msg) + " | " + str(msg_signature))
 
-				print " "
-				if len(winners) > 1:
-					print "There is a tie between", len(winners), "candidates:"
-					for winner in winners:
-						print "   Candidate", winner
-				elif len(winners) == 1:
-					print "The winner of the election is Candidate", winners[0]
+				votestxttemp = open("votes.txt", "r")
+				temp = votestxttemp.read()
+				votestxttemp.close()
+
+				votestxt = open("votes.txt", "w")
+				if len(temp) == 0:
+					votestxt.write(str(long(msg)))
 				else:
-					print "Election error."
-
-				if GLOBAL_VERBOSE:
-					print "User Public Key Hash:", message[1]
+					d = paillier.add(long(temp), long(msg), paillier.PAILLIER_Private("keys/private/homomorphic.private"))
+					print "test: ", paillier.decrypt(d, paillier.PAILLIER_Private("keys/private/homomorphic.private"))
+					votestxt.write(str(d))
+				votestxt.close()
+				
 			else:
 				print message[1]
 

@@ -106,12 +106,8 @@ Message
 
 --------------------- Ballot Structure ---------------------
 
-Base = ceil( log_2( X ) )
-L = N * Base
-Ballot Length (in Bits) = L Random Bits + L Ballot Bits   [ Total Length: 2 * L ]
-
-Candidate # T Identification = Base ^ T
-
+Base = ceil( log_2( X ) ) + 1
+L = 2 ^ (Base * Candidate Number)
 
 --------------- Vote Validation and Auditing ---------------
 

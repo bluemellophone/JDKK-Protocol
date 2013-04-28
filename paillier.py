@@ -70,9 +70,9 @@ def decrypt(c, priv):
 	lx = L(x, n1)
 	return (lx * mu1) % n1
 
-def add(c1, c2, N):
-	# total = add(total, encrypted_ballots[i], N)
-	return (c1 * c2) % (N ** 2)
+def add(c1, c2, priv):
+	n1 = priv.p * priv.q
+	return (c1 * c2) % (n1 ** 2)
 
 def tally(cand, total):
 	cand = (sorted(cand))[::-1]

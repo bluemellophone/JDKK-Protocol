@@ -194,8 +194,28 @@ else:
 while True:
 	print_candidates(crypto_dictionary)
 	
-	message = raw_input("Message: ")
-	message = pack_message(paillier.encrypt(crypto_dictionary["candidates"][12][0], crypto_dictionary["homomorphic_public_key"]), crypto_dictionary, GLOBAL_VERBOSE)
+	vote_original = 0
+	vote_verification = 0
+	while vote_original != vote_verification or (vote_original == 0 and vote_verification == 0):
+		if vote_original != vote_verification:
+			print "Vote Verification Failed!\n"
+
+		print "Vote for your candidate by inputting their corresponding number..."
+
+		vote_original = int(raw_input("Vote: "))
+		while vote_original not in range(1, len(crypto_dictionary["candidates"]) + 1):
+			print "Invalid Vote!\n"
+			vote_original = int(raw_input("Vote: "))
+		
+		print "You have selected to vote for:", crypto_dictionary["candidates"][vote_original][1]
+		vote_verification = int(raw_input("Vote Verification: "))
+		while vote_verification not in range(1, len(crypto_dictionary["candidates"]) + 1):
+			print "Invalid Vote!\n"
+			vote_verification = int(raw_input("Vote Verification: "))
+
+	print " "
+
+	message = pack_message(paillier.encrypt(crypto_dictionary["candidates"][vote_original][0], crypto_dictionary["homomorphic_public_key"]), crypto_dictionary, GLOBAL_VERBOSE)
 	if message[0]:
 		try:
 			util.debug(GLOBAL_VERBOSE, "client_aes_id", crypto_dictionary["client_aes_id"])
@@ -206,7 +226,7 @@ while True:
 	else:
 		print message[1]
 		sys.exit(0)
-		
+
 	response = unpack_message(socket.recv(), crypto_dictionary, GLOBAL_VERBOSE)
 	if response[0]:
 		if GLOBAL_VERBOSE:
