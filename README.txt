@@ -5,6 +5,20 @@ Project Members: Jason Parham, David Bevins, Kyle Croman, Kegham Khosdeghian
 
 ############################################################
 
+--------------- Notes ---------------
+
+The client program has to associate a voter with a RSA keypair.  In reality, there would exist only one provate key on a machine
+for the purpose of voting.  This is not a realistic, practical, or an efficient implimentation.  For testing purposes, the client
+asks for the voter number of the user so that it can loate that person's RSA public / private keypair.
+
+keygen.py creates RSA keys for each voter and the server and also creates a homomorphic key using RSA primatives.  To add voters, 
+adjust the parameter in the keygen.py file and execute.
+
+The authors note that this election server has a limited application for the purposes of a school election.  For a national-level
+election, this software implimentation will likely need to implement features that mirror real-world malware, like: packed executable,
+anti-dissasembly / anti-debugging / anti-virtualization, integrity checking, metamorphic / polymorphic engines, etc.  Such 
+implementations are beyond the scope of this course and are quite evil for the analyzing team.
+
 
 --------------- Protocol Parameters ---------------
 
@@ -21,17 +35,18 @@ the voting is to begin, the collection of registered public keys ( with identify
 server administrator ( Mal ).
 
 It should be stressed that the collection of public keys has no associating identifying information.  The server administrator
-simply has a collection of public keys for the users who are registered and allowed to vote.  
+simply has a collection of public keys for the users who are registered and allowed to vote.  The server administrator cannot
+identify a specific voter based on their public key.
 
 The server administrator, upon receiving these public keys, will generate a table of public keys and their corresponding hashes
 of the public keys.  For example:
    
-      Hash( Public Key 1 ) -> Key 1
-      Hash( Public Key 2 ) -> Key 2
-      .
-      .
-      .
-      Hash( Public Key X ) -> Key X
+   Hash( Public Key 1 ) -> Key 1
+   Hash( Public Key 2 ) -> Key 2
+   .
+   .
+   .
+   Hash( Public Key X ) -> Key X
 
 The hashed key table is used to efficiently look up and authenticate users who connect to the server as authentic, registered 
 voters.  
@@ -51,23 +66,13 @@ PyZMQ ( Networking Library )
    - move src/pyzmq-13.0.2/build/lib.*/zmq to project root
 
 
---------------- PyCrypto Usage Instructions ---------------
-
-   - from Crypto import *
-   - from Crypto import Random.*
-   - from Crypto import Hash.SHA256
- 
-
 --------------------- Project Elements ---------------------
 
 Symmetric Encryption: AES-256 (Post-Handshake Confidentiality)
-Asymmetric Encryption: RSA (Two-way Authentication & Handshake Confidentiality)
+Asymmetric Encryption: RSA-2048 (Two-way Authentication & Handshake Confidentiality)
 Hash Function: SHA-512
 Nonces: Two-Way Random Numbers
-
-Homomorphic Encryption: Paillier
-
-
+Homomorphic Encryption: Paillier-2048
 
 
 --------------------- Project Data Structures ---------------------
@@ -107,29 +112,48 @@ Message
 --------------------- Ballot Structure ---------------------
 
 Base = ceil( log_2( X ) ) + 1
-L = 2 ^ (Base * Candidate Number)
+Ballot = 2 ^ (Base * Candidate Number)
+
 
 --------------- Vote Validation and Auditing ---------------
 
-Upon the completion of the vote, the server administrator will publish on the web the following table:
+Upon the completion of the vote, the server administrator will publish on the web the following table (public.txt):
 
-      Encode^BASE^64( Public Key 1 ) -> Homomorphically Encrypted Ballot 1 -> Encode^BASE^64( Signature of Ballot 1 )
-      Encode^BASE^64( Public Key 2 ) -> Homomorphically Encrypted Ballot 2 -> Encode^BASE^64( Signature of Ballot 2 )
-      .
-      .
-      .
-      Encode^BASE^64( Public Key T ) -> Homomorphically Encrypted Ballot T -> Encode^BASE^64( Signature of Ballot T )  ( Where T = Number of Votes Casted and T <= X )
+   Encode^BASE^64( Public Key 1 ) -> Homomorphically Encrypted Ballot 1 -> Encode^BASE^64( Signature of Ballot 1 )
+   Encode^BASE^64( Public Key 2 ) -> Homomorphically Encrypted Ballot 2 -> Encode^BASE^64( Signature of Ballot 2 )
+   .
+   .
+   .
+   Encode^BASE^64( Public Key T ) -> Homomorphically Encrypted Ballot T -> Encode^BASE^64( Signature of Ballot T )  ( Where T = Number of Votes Casted and T <= X )
     
-      Homomorphic Sum of all Encrypted Ballots
+   Homomorphic Sum of all Encrypted Ballots -> Homomoprhic Private Key
 
-Any user can find their hashed public key in the table and verify that their signature of the encrypted ballot is authentic.  
+Any user can find their public key in the table and verify that their signature of the encrypted ballot is authentic.  
 If the signature is authentic, then their ballot must also be correct becuase only the user should have access to their private
 key.  If the signature is not authentic, then the user can recall the election.
 
 With all cast ballots published and the sum of the homomorphic ciphertexts also published, then the sum can be verified by any
-person wishing to do so.  
+person wishing to do so.  Finally, the homomorphic private key is published so that the community can collectively verify the
+vote and the total sum.  This scheme only works as long as the public keys have no personal identifying information associated
+with them.  It should be stressed that SIS is a trusted authority because they are the one entity that organizes voter
+registration.
 
-The server administrator will therefore, not be able to manufacture a fake student without RPI's SIS system detecting a false 
-voter because SIS can audit the published public key hashes.
+The server administrator will be able to manufacture a fake student without RPI's SIS system detecting a false voter public key.
+The server adminsitrator will also not be able to change a ballot for a particular student because it would be detectable by the 
+voter; only the voter maintains their own private key and therefore only a voter can sign their ballot.  The server administrator
+will also not be able to add registered voters who decide not to actually vote because they can detect their vote being cast.
+In conclusion, the server administrator will not be able to manufacture election results because at the end of the election the
+homomorphic private key is also published; this may seem as counterintuitive but we are willing to have a perfectly auditable
+election at the expense of overhead and the slightly increased chance of voter coercion.
+
+
+--------------- Conclusion ---------------
+
+The election results are stored in public.txt and the homomorphic sum is stored in votes.txt.  The following three things are 
+published at the end of the election: 
+   - public.txt
+   - votes.txt
+   - homomorphic.private
+
 
    
