@@ -7,6 +7,11 @@ Project Members: Jason Parham, David Bevins, Kyle Croman, Kegham Khosdeghian
 
 --------------- Notes ---------------
 
+The verbose flag -v can be added to the python file to print out information in verbose mode.  For example:
+python server.py 5000 -v
+   or
+python client.py 5000 -v
+
 The client program has to associate a voter with a RSA keypair.  In reality, there would exist only one provate key on a machine
 for the purpose of voting.  This is not a realistic, practical, or an efficient implimentation.  For testing purposes, the client
 asks for the voter number of the user so that it can loate that person's RSA public / private keypair.
