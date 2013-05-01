@@ -15,9 +15,13 @@ keygen.py creates RSA keys for each voter and the server and also creates a homo
 adjust the parameter in the keygen.py file and execute.
 
 The authors note that this election server has a limited application for the purposes of a school election.  For a national-level
-election, this software implimentation will likely need to implement features that mirror real-world malware, like: packed executable,
+election, this software implimentation will likely need features that mirror real-world malware, like: packed executable,
 anti-dissasembly / anti-debugging / anti-virtualization, integrity checking, metamorphic / polymorphic engines, etc.  Such 
 implementations are beyond the scope of this course and are quite evil for the analyzing team.
+
+Candidates are determined by the list of candidate names in util.py.  The code is generaic enough to support the addition or deletion
+of the sample candidates.  The code also gathers the number of registered voters from the number of RSA public keys "given" form SIS
+and stored in keys/public/voter#.public
 
 
 --------------- Protocol Parameters ---------------
@@ -155,5 +159,6 @@ published at the end of the election:
    - votes.txt
    - homomorphic.private
 
+To find the results of the election, simply run tally.py
 
    
