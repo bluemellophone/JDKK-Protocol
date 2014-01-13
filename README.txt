@@ -24,7 +24,7 @@ election, this software implimentation will likely need features that mirror rea
 anti-dissasembly / anti-debugging / anti-virtualization, integrity checking, metamorphic / polymorphic engines, etc.  Such 
 implementations are beyond the scope of this course and are quite evil for the analyzing team.
 
-Candidates are determined by the list of candidate names in util.py.  The code is generaic enough to support the addition or deletion
+Candidates are determined by the list of candidate names in util.py.  The code is generic enough to support the addition or deletion
 of the sample candidates.  The code also gathers the number of registered voters from the number of RSA public keys "given" form SIS
 and stored in keys/public/voter#.public
 
